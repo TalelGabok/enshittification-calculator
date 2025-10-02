@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Enshittification Calculator</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.2s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        // Lucide React icons as SVG components
+        const Calculator = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <line x1="8" y1="6" x2="16" y2="6"/>
+                <line x1="16" y1="14" x2="16" y2="18"/>
+                <path d="M16 10h.01"/>
+                <path d="M12 10h.01"/>
+                <path d="M8 10h.01"/>
+                <path d="M12 14h.01"/>
+                <path d="M8 14h.01"/>
+                <path d="M12 18h.01"/>
+                <path d="M8 18h.01"/>
+            </svg>
+        );
+
+        const TrendingDown = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/>
+                <polyline points="17 18 23 18 23 12"/>
+            </svg>
+        );
+
+        const AlertTriangle = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
+                <line x1="12" y1="9" x2="12" y2="13"/>
+                <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+        );
+
+        const DollarSign = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        );
+
+        const Users = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+        );
+
+        const Info = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+        );
+
+        const EnshittificationCalculator = () => {
+            const [mode, setMode] = useState('simple');
+            const [activeTooltip, setActiveTooltip] = useState(null);
+            const [simpleInputs, setSimpleInputs] = useState({
+                reachBefore: 1000,
+                reachAfter: 100,
+                timeCostPerPost: 20,
+                valuePerImpression: 0.01,
+                boostPrice: 15,
+                boostReachMultiplier: 5
+            });
+
+            const [complexInputs, setComplexInputs] = useState({
+                reachBefore: 1000,
+                reachAfter: 100,
+                timeCostPerPost: 20,
+                valuePerImpression: 0.01,
+                boostPrice: 15,
+                boostReachMultiplier: 5,
+                postsPerMonth: 12,
+                currentCreatorCount: 10000,
+                userEngagementValue: 0.05,
+                lossAversionFactor: 2.5,
+                churnSensitivity: 0.3,
+                onboardingRate: 0.05,
+                monthsToSimulate: 24
+            });
+
+            const [simpleResults, setSimpleResults] = useState(null);
+            const [complexResults, setComplexResults] = useState(null);
+
+            // Tooltip explanations
+            const tooltips = {
+                reachBefore: "The number of people who saw your posts before the platform throttled your reach. Check your analytics for your historical average.",
+                reachAfter: "The number of people who see your posts now, after throttling. This is your current reach.",
+                timeCostPerPost: "How much your time is worth per post. If a post takes 1 hour and your hourly rate is $50, enter $50. Include research, writing, and editing time.",
+                valuePerImpression: "What each view is worth to you. Calculate: (average revenue per customer) ÷ (impressions needed to get one customer). For awareness, use brand value estimates.",
+                boostPrice: "What the platform charges to boost a single post. Check the platform's boost/promote pricing.",
+                boostReachMultiplier: "How many times your baseline reach the boost gives you. If normal reach is 1000 and boost gives 5000 additional, enter 5.",
+                postsPerMonth: "How frequently creators post on average. More posts = more content supply, but also higher time investment.",
+                currentCreatorCount: "Total number of active creators on the platform at the start of simulation. This models the entire ecosystem.",
+                userEngagementValue: "Revenue the platform earns per unit of engagement (ad impressions, subscriptions, etc). Higher value means more ads revenue.",
+                lossAversionFactor: "How much more painful losses feel than equivalent gains (from prospect theory). 2.5 means losses hurt 2.5x more. Higher = more panic boosting.",
+                churnSensitivity: "How quickly creators quit when they perceive losses. Higher values = faster exodus when reach drops.",
+                onboardingRate: "Rate at which new creators join each month as a fraction of current creators. Generous reach policies increase onboarding.",
+                monthsToSimulate: "How many months to run the simulation forward. Longer simulations show whether death spirals stabilize or accelerate.",
+                theta: "Your current reach as a percentage of baseline. Below your critical threshold means you're losing money on every post.",
+                thetaCrit: "The minimum reach percentage you need to break even. If current reach is below this, you're subsidizing the platform with your time.",
+                breakEvenBoostPrice: "The maximum you should pay for a boost while still making money. If the actual price is higher, boosting is irrational.",
+                verdict: "Overall assessment of your situation based on economics and viability thresholds."
+            };
+
+            const Tooltip = ({ id, text }) => {
+                const isActive = activeTooltip === id;
+                
+                return (
+                    <div className="relative inline-block ml-2">
+                        <button
+                            onMouseEnter={() => setActiveTooltip(id)}
+                            onMouseLeave={() => setActiveTooltip(null)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setActiveTooltip(isActive ? null : id);
+                            }}
+                            className="text-purple-400 hover:text-purple-300 transition-colors"
+                        >
+                            <Info />
+                        </button>
+                        {isActive && (
+                            <div className="absolute z-50 w-72 p-3 bg-slate-900 border-2 border-purple-500 rounded-lg shadow-xl text-sm text-slate-200 left-6 top-0 animate-fadeIn">
+                                <div className="absolute -left-2 top-2 w-4 h-4 bg-slate-900 border-l-2 border-t-2 border-purple-500 transform rotate-45"></div>
+                                {text}
+                            </div>
+                        )}
+                    </div>
+                );
+            };
+
+            // Simple Mode Calculations
+            const calculateSimple = () => {
+                const { reachBefore, reachAfter, timeCostPerPost, valuePerImpression, boostPrice, boostReachMultiplier } = simpleInputs;
+                
+                const theta = reachAfter / reachBefore;
+                const thetaCrit = timeCostPerPost / (valuePerImpression * reachBefore);
+                const breakEvenBoostPrice = valuePerImpression * boostReachMultiplier * reachBefore;
+                
+                const revenueBeforeDrop = valuePerImpression * reachBefore - timeCostPerPost;
+                const revenueAfterDrop = valuePerImpression * reachAfter - timeCostPerPost;
+                const revenueWithBoost = valuePerImpression * (reachAfter + boostReachMultiplier * reachBefore) - timeCostPerPost - boostPrice;
+                
+                const isViableWithoutBoost = theta >= thetaCrit;
+                const isBoostWorthIt = boostPrice <= breakEvenBoostPrice;
+                const reachDropPercent = ((reachBefore - reachAfter) / reachBefore * 100).toFixed(1);
+                
+                return {
+                    theta: (theta * 100).toFixed(1),
+                    thetaCrit: (thetaCrit * 100).toFixed(1),
+                    breakEvenBoostPrice: breakEvenBoostPrice.toFixed(2),
+                    revenueBeforeDrop: revenueBeforeDrop.toFixed(2),
+                    revenueAfterDrop: revenueAfterDrop.toFixed(2),
+                    revenueWithBoost: revenueWithBoost.toFixed(2),
+                    isViableWithoutBoost,
+                    isBoostWorthIt,
+                    reachDropPercent,
+                    verdict: !isViableWithoutBoost ? 'Platform killed your economics' : 
+                            isBoostWorthIt ? 'Boost makes sense' : 
+                            'Boost is a behavioral tax'
+                };
+            };
+
+            // Complex Mode Simulation
+            const calculateComplex = () => {
+                const { 
+                    reachBefore, reachAfter, timeCostPerPost, valuePerImpression, 
+                    boostPrice, boostReachMultiplier, postsPerMonth, currentCreatorCount,
+                    userEngagementValue, lossAversionFactor, churnSensitivity, 
+                    onboardingRate, monthsToSimulate 
+                } = complexInputs;
+
+                const theta = reachAfter / reachBefore;
+                const thetaCrit = timeCostPerPost / (valuePerImpression * reachBefore);
+                
+                let creators = currentCreatorCount;
+                let referenceReach = reachBefore;
+                let totalRevenue = 0;
+                let boostRevenue = 0;
+                let adRevenue = 0;
+                let peakCreators = currentCreatorCount;
+                let minCreators = currentCreatorCount;
+                
+                const monthlyData = [];
+                
+                for (let month = 0; month < monthsToSimulate; month++) {
+                    referenceReach = 0.7 * reachAfter + 0.3 * referenceReach;
+                    
+                    const perceivedLoss = Math.max(0, (referenceReach - reachAfter) / referenceReach);
+                    
+                    const lossEffect = lossAversionFactor * perceivedLoss;
+                    const priceEffect = Math.log(boostPrice / (valuePerImpression * boostReachMultiplier * reachBefore));
+                    const boostAdoptionProb = 1 / (1 + Math.exp(-(-0.5 + 3 * lossEffect - 1.5 * priceEffect)));
+                    
+                    const economicLoss = Math.max(0, timeCostPerPost - valuePerImpression * reachAfter * postsPerMonth) / timeCostPerPost;
+                    const churnProb = 1 / (1 + Math.exp(-(0.5 * economicLoss + churnSensitivity * perceivedLoss - 1)));
+                    
+                    const churnedCreators = creators * churnProb;
+                    const newCreators = onboardingRate * Math.pow(theta, 0.5) * creators;
+                    creators = creators - churnedCreators + newCreators;
+                    
+                    peakCreators = Math.max(peakCreators, creators);
+                    minCreators = Math.min(minCreators, creators);
+                    
+                    const monthlyBoostRev = boostPrice * boostAdoptionProb * creators;
+                    const contentSupply = creators * postsPerMonth;
+                    const engagement = Math.pow(contentSupply, 0.7);
+                    const monthlyAdRev = userEngagementValue * engagement;
+                    
+                    boostRevenue += monthlyBoostRev;
+                    adRevenue += monthlyAdRev;
+                    totalRevenue += monthlyBoostRev + monthlyAdRev;
+                    
+                    monthlyData.push({
+                        month: month + 1,
+                        creators: Math.round(creators),
+                        boostAdoption: (boostAdoptionProb * 100).toFixed(1),
+                        churnRate: (churnProb * 100).toFixed(1),
+                        revenue: (monthlyBoostRev + monthlyAdRev).toFixed(0)
+                    });
+                }
+                
+                const creatorRetention = (creators / currentCreatorCount * 100).toFixed(1);
+                const avgMonthlyRevenue = (totalRevenue / monthsToSimulate).toFixed(0);
+                
+                return {
+                    finalCreatorCount: Math.round(creators),
+                    creatorRetention,
+                    peakCreators: Math.round(peakCreators),
+                    minCreators: Math.round(minCreators),
+                    totalRevenue: totalRevenue.toFixed(0),
+                    boostRevenue: boostRevenue.toFixed(0),
+                    adRevenue: adRevenue.toFixed(0),
+                    avgMonthlyRevenue,
+                    boostRevenuePercent: (boostRevenue / totalRevenue * 100).toFixed(1),
+                    monthlyData: monthlyData.slice(0, 12),
+                    verdict: creatorRetention > 80 ? 'Sustainable' :
+                            creatorRetention > 50 ? 'Concerning decline' :
+                            'Death spiral initiated'
+                };
+            };
+
+            useEffect(() => {
+                setSimpleResults(calculateSimple());
+            }, [simpleInputs]);
+
+            useEffect(() => {
+                setComplexResults(calculateComplex());
+            }, [complexInputs]);
+
+            const updateSimpleInput = (field, value) => {
+                const numValue = parseFloat(value) || 0;
+                setSimpleInputs(prev => ({ ...prev, [field]: numValue }));
+            };
+
+            const updateComplexInput = (field, value) => {
+                const numValue = parseFloat(value) || 0;
+                setComplexInputs(prev => ({ ...prev, [field]: numValue }));
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
+                    <div className="max-w-6xl mx-auto">
+                        {/* Header */}
+                        <div className="text-center mb-8">
+                            <h1 className="text-5xl font-bold text-white mb-3 flex items-center justify-center gap-3">
+                                <TrendingDown />
+                                Platform Enshittification Calculator
+                            </h1>
+                            <p className="text-slate-300 text-lg">Calculate when platform throttling destroys creator economics</p>
+                        </div>
+
+                        {/* Mode Toggle */}
+                        <div className="flex justify-center mb-8">
+                            <div className="bg-slate-800 rounded-lg p-1 inline-flex">
+                                <button
+                                    onClick={() => setMode('simple')}
+                                    className={`px-6 py-3 rounded-md font-semibold transition-all ${
+                                        mode === 'simple' 
+                                            ? 'bg-purple-600 text-white shadow-lg' 
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Simple Mode
+                                </button>
+                                <button
+                                    onClick={() => setMode('complex')}
+                                    className={`px-6 py-3 rounded-md font-semibold transition-all ${
+                                        mode === 'complex' 
+                                            ? 'bg-purple-600 text-white shadow-lg' 
+                                            : 'text-slate-400 hover:text-white'
+                                    }`}
+                                >
+                                    Complex Mode
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Simple Mode */}
+                        {mode === 'simple' && (
+                            <div className="grid md:grid-cols-2 gap-6">
+                                {/* Inputs */}
+                                <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                    <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                                        <Calculator />
+                                        Your Numbers
+                                    </h2>
+                                    
+                                    <div className="space-y-4">
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                Reach Before Throttle (impressions)
+                                                <Tooltip id="reachBefore" text={tooltips.reachBefore} />
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={simpleInputs.reachBefore}
+                                                onChange={(e) => updateSimpleInput('reachBefore', e.target.value)}
+                                                className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                Reach After Throttle (impressions)
+                                                <Tooltip id="reachAfter" text={tooltips.reachAfter} />
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={simpleInputs.reachAfter}
+                                                onChange={(e) => updateSimpleInput('reachAfter', e.target.value)}
+                                                className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                Time Cost Per Post ($)
+                                                <Tooltip id="timeCostPerPost" text={tooltips.timeCostPerPost} />
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={simpleInputs.timeCostPerPost}
+                                                onChange={(e) => updateSimpleInput('timeCostPerPost', e.target.value)}
+                                                className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                Value Per Impression ($)
+                                                <Tooltip id="valuePerImpression" text={tooltips.valuePerImpression} />
+                                            </label>
+                                            <input
+                                                type="number"
+                                                step="0.001"
+                                                value={simpleInputs.valuePerImpression}
+                                                onChange={(e) => updateSimpleInput('valuePerImpression', e.target.value)}
+                                                className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                Boost Price ($)
+                                                <Tooltip id="boostPrice" text={tooltips.boostPrice} />
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={simpleInputs.boostPrice}
+                                                onChange={(e) => updateSimpleInput('boostPrice', e.target.value)}
+                                                className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                Boost Reach Multiplier (x baseline)
+                                                <Tooltip id="boostReachMultiplier" text={tooltips.boostReachMultiplier} />
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={simpleInputs.boostReachMultiplier}
+                                                onChange={(e) => updateSimpleInput('boostReachMultiplier', e.target.value)}
+                                                className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Results */}
+                                {simpleResults && (
+                                    <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                        <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-2">
+                                            <AlertTriangle />
+                                            Analysis
+                                        </h2>
+
+                                        <div className="space-y-4">
+                                            {/* Verdict */}
+                                            <div className={`p-4 rounded-lg ${
+                                                simpleResults.verdict === 'Platform killed your economics' ? 'bg-red-900/50 border-2 border-red-500' :
+                                                simpleResults.verdict === 'Boost is a behavioral tax' ? 'bg-yellow-900/50 border-2 border-yellow-500' :
+                                                'bg-green-900/50 border-2 border-green-500'
+                                            }`}>
+                                                <div className="text-xl font-bold text-white mb-1">
+                                                    {simpleResults.verdict}
+                                                </div>
+                                                <div className="text-sm text-slate-300">
+                                                    Reach dropped {simpleResults.reachDropPercent}%
+                                                </div>
+                                            </div>
+
+                                            {/* Key Metrics */}
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="bg-slate-700 p-4 rounded-lg">
+                                                    <div className="text-sm text-slate-400 mb-1 flex items-center">
+                                                        Current Reach
+                                                        <Tooltip id="theta" text={tooltips.theta} />
+                                                    </div>
+                                                    <div className="text-2xl font-bold text-white">{simpleResults.theta}%</div>
+                                                </div>
+                                                <div className="bg-slate-700 p-4 rounded-lg">
+                                                    <div className="text-sm text-slate-400 mb-1 flex items-center">
+                                                        Viability Threshold
+                                                        <Tooltip id="thetaCrit" text={tooltips.thetaCrit} />
+                                                    </div>
+                                                    <div className="text-2xl font-bold text-white">{simpleResults.thetaCrit}%</div>
+                                                </div>
+                                            </div>
+
+                                            {/* Revenue Analysis */}
+                                            <div className="bg-slate-700 p-4 rounded-lg">
+                                                <div className="text-sm font-medium text-slate-300 mb-3">Revenue Per Post</div>
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-400">Before throttle:</span>
+                                                        <span className={`font-bold ${parseFloat(simpleResults.revenueBeforeDrop) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            ${simpleResults.revenueBeforeDrop}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-400">After throttle:</span>
+                                                        <span className={`font-bold ${parseFloat(simpleResults.revenueAfterDrop) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            ${simpleResults.revenueAfterDrop}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-400">With boost:</span>
+                                                        <span className={`font-bold ${parseFloat(simpleResults.revenueWithBoost) >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                            ${simpleResults.revenueWithBoost}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Boost Analysis */}
+                                            <div className="bg-slate-700 p-4 rounded-lg">
+                                                <div className="text-sm font-medium text-slate-300 mb-3 flex items-center">
+                                                    Boost Economics
+                                                    <Tooltip id="breakEvenBoostPrice" text={tooltips.breakEvenBoostPrice} />
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-400">Current price:</span>
+                                                        <span className="font-bold text-white">${simpleInputs.boostPrice}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-400">Break-even price:</span>
+                                                        <span className="font-bold text-white">${simpleResults.breakEvenBoostPrice}</span>
+                                                    </div>
+                                                    <div className="flex justify-between">
+                                                        <span className="text-slate-400">Worth it?</span>
+                                                        <span className={`font-bold ${simpleResults.isBoostWorthIt ? 'text-green-400' : 'text-red-400'}`}>
+                                                            {simpleResults.isBoostWorthIt ? 'Yes' : 'No'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Recommendation */}
+                                            <div className="bg-purple-900/50 p-4 rounded-lg border border-purple-500">
+                                                <div className="text-sm font-medium text-purple-200 mb-2">Recommendation</div>
+                                                <div className="text-sm text-slate-300">
+                                                    {!simpleResults.isViableWithoutBoost && !simpleResults.isBoostWorthIt && (
+                                                        "Your economics are destroyed. Consider reducing posting frequency or leaving the platform."
+                                                    )}
+                                                    {!simpleResults.isViableWithoutBoost && simpleResults.isBoostWorthIt && (
+                                                        "Boosting makes financial sense, but you're now dependent on paid distribution."
+                                                    )}
+                                                    {simpleResults.isViableWithoutBoost && !simpleResults.isBoostWorthIt && (
+                                                        "You're still viable without boosting. Don't pay the behavioral tax."
+                                                    )}
+                                                    {simpleResults.isViableWithoutBoost && simpleResults.isBoostWorthIt && (
+                                                        "You're viable, and boosting adds positive ROI. Optional but worthwhile."
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Complex Mode */}
+                        {mode === 'complex' && (
+                            <div className="space-y-6">
+                                {/* Inputs */}
+                                <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                    <h2 className="text-2xl font-bold text-white mb-6">Platform-Wide Simulation Parameters</h2>
+                                    
+                                    <div className="grid md:grid-cols-3 gap-6">
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-purple-300">Creator Economics</h3>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Reach Before
+                                                    <Tooltip id="complex-reachBefore" text={tooltips.reachBefore} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.reachBefore}
+                                                    onChange={(e) => updateComplexInput('reachBefore', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Reach After
+                                                    <Tooltip id="complex-reachAfter" text={tooltips.reachAfter} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.reachAfter}
+                                                    onChange={(e) => updateComplexInput('reachAfter', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Time Cost Per Post ($)
+                                                    <Tooltip id="complex-timeCostPerPost" text={tooltips.timeCostPerPost} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.timeCostPerPost}
+                                                    onChange={(e) => updateComplexInput('timeCostPerPost', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Value Per Impression ($)
+                                                    <Tooltip id="complex-valuePerImpression" text={tooltips.valuePerImpression} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.001"
+                                                    value={complexInputs.valuePerImpression}
+                                                    onChange={(e) => updateComplexInput('valuePerImpression', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-purple-300">Platform Parameters</h3>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Boost Price ($)
+                                                    <Tooltip id="complex-boostPrice" text={tooltips.boostPrice} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.boostPrice}
+                                                    onChange={(e) => updateComplexInput('boostPrice', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Boost Multiplier
+                                                    <Tooltip id="complex-boostReachMultiplier" text={tooltips.boostReachMultiplier} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.boostReachMultiplier}
+                                                    onChange={(e) => updateComplexInput('boostReachMultiplier', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Posts Per Month
+                                                    <Tooltip id="postsPerMonth" text={tooltips.postsPerMonth} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.postsPerMonth}
+                                                    onChange={(e) => updateComplexInput('postsPerMonth', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Current Creators
+                                                    <Tooltip id="currentCreatorCount" text={tooltips.currentCreatorCount} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.currentCreatorCount}
+                                                    onChange={(e) => updateComplexInput('currentCreatorCount', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-4">
+                                            <h3 className="text-lg font-semibold text-purple-300">Behavioral Factors</h3>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Loss Aversion Factor
+                                                    <Tooltip id="lossAversionFactor" text={tooltips.lossAversionFactor} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={complexInputs.lossAversionFactor}
+                                                    onChange={(e) => updateComplexInput('lossAversionFactor', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Churn Sensitivity
+                                                    <Tooltip id="churnSensitivity" text={tooltips.churnSensitivity} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.1"
+                                                    value={complexInputs.churnSensitivity}
+                                                    onChange={(e) => updateComplexInput('churnSensitivity', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Onboarding Rate
+                                                    <Tooltip id="onboardingRate" text={tooltips.onboardingRate} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={complexInputs.onboardingRate}
+                                                    onChange={(e) => updateComplexInput('onboardingRate', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    User Engagement Value ($)
+                                                    <Tooltip id="userEngagementValue" text={tooltips.userEngagementValue} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={complexInputs.userEngagementValue}
+                                                    onChange={(e) => updateComplexInput('userEngagementValue', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-slate-300 mb-2 flex items-center">
+                                                    Months to Simulate
+                                                    <Tooltip id="monthsToSimulate" text={tooltips.monthsToSimulate} />
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    value={complexInputs.monthsToSimulate}
+                                                    onChange={(e) => updateComplexInput('monthsToSimulate', e.target.value)}
+                                                    className="w-full bg-slate-700 text-white rounded-lg px-4 py-2 focus:ring-2 focus:ring-purple-500 outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Results */}
+                                {complexResults && (
+                                    <>
+                                        {/* Summary Cards */}
+                                        <div className="grid md:grid-cols-4 gap-4">
+                                            <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <Users />
+                                                    <div className="text-sm text-slate-400">Creator Retention</div>
+                                                </div>
+                                                <div className={`text-3xl font-bold ${
+                                                    parseFloat(complexResults.creatorRetention) > 80 ? 'text-green-400' :
+                                                    parseFloat(complexResults.creatorRetention) > 50 ? 'text-yellow-400' :
+                                                    'text-red-400'
+                                                }`}>
+                                                    {complexResults.creatorRetention}%
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    {complexResults.finalCreatorCount.toLocaleString()} of {complexInputs.currentCreatorCount.toLocaleString()}
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <DollarSign />
+                                                    <div className="text-sm text-slate-400">Total Revenue</div>
+                                                </div>
+                                                <div className="text-3xl font-bold text-white">
+                                                    ${(parseFloat(complexResults.totalRevenue) / 1000).toFixed(0)}K
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    Avg ${(parseFloat(complexResults.avgMonthlyRevenue) / 1000).toFixed(1)}K/mo
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <TrendingDown />
+                                                    <div className="text-sm text-slate-400">Boost Revenue</div>
+                                                </div>
+                                                <div className="text-3xl font-bold text-purple-300">
+                                                    {complexResults.boostRevenuePercent}%
+                                                </div>
+                                                <div className="text-xs text-slate-500 mt-1">
+                                                    ${(parseFloat(complexResults.boostRevenue) / 1000).toFixed(0)}K total
+                                                </div>
+                                            </div>
+
+                                            <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <AlertTriangle />
+                                                    <div className="text-sm text-slate-400">Platform Status</div>
+                                                </div>
+                                                <div className={`text-xl font-bold ${
+                                                    complexResults.verdict === 'Sustainable' ? 'text-green-400' :
+                                                    complexResults.verdict === 'Concerning decline' ? 'text-yellow-400' :
+                                                    'text-red-400'
+                                                }`}>
+                                                    {complexResults.verdict}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Monthly Data Table */}
+                                        <div className="bg-slate-800 rounded-xl p-6 shadow-xl">
+                                            <h3 className="text-xl font-bold text-white mb-4">First Year Monthly Breakdown</h3>
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left">
+                                                    <thead>
+                                                        <tr className="border-b border-slate-700">
+                                                            <th className="py-3 px-4 text-slate-300 font-semibold">Month</th>
+                                                            <th className="py-3 px-4 text-slate-300 font-semibold">Creators</th>
+                                                            <th className="py-3 px-4 text-slate-300 font-semibold">Boost Adoption</th>
+                                                            <th className="py-3 px-4 text-slate-300 font-semibold">Churn Rate</th>
+                                                            <th className="py-3 px-4 text-slate-300 font-semibold">Revenue</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                        {complexResults.monthlyData.map((row, idx) => (
+                                                            <tr key={idx} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                                                                <td className="py-3 px-4 text-white">{row.month}</td>
+                                                                <td className="py-3 px-4 text-slate-300">{row.creators.toLocaleString()}</td>
+                                                                <td className="py-3 px-4 text-slate-300">{row.boostAdoption}%</td>
+                                                                <td className="py-3 px-4 text-slate-300">{row.churnRate}%</td>
+                                                                <td className="py-3 px-4 text-slate-300">${parseFloat(row.revenue).toLocaleString()}</td>
+                                                            </tr>
+                                                        ))}
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+
+                                        {/* Insights */}
+                                        <div className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 rounded-xl p-6 shadow-xl border border-purple-500/50">
+                                            <h3 className="text-xl font-bold text-white mb-4">Key Insights</h3>
+                                            <div className="space-y-3 text-slate-200">
+                                                <p>
+                                                    • Platform started with <strong>{complexInputs.currentCreatorCount.toLocaleString()} creators</strong> and ended with <strong>{complexResults.finalCreatorCount.toLocaleString()}</strong> after {complexInputs.monthsToSimulate} months
+                                                </p>
+                                                <p>
+                                                    • Creator base peaked at <strong>{complexResults.peakCreators.toLocaleString()}</strong> and bottomed at <strong>{complexResults.minCreators.toLocaleString()}</strong>
+                                                </p>
+                                                <p>
+                                                    • Boost revenue represents <strong>{complexResults.boostRevenuePercent}%</strong> of total revenue, showing {parseFloat(complexResults.boostRevenuePercent) > 40 ? 'heavy' : 'moderate'} dependence on paid features
+                                                </p>
+                                                <p>
+                                                    • Ad revenue of <strong>${(parseFloat(complexResults.adRevenue) / 1000).toFixed(0)}K</strong> {parseFloat(complexResults.creatorRetention) < 60 ? 'declined significantly due to reduced engagement' : 'remained relatively stable'}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<EnshittificationCalculator />, document.getElementById('root'));
+    </script>
+</body>
+</html>
