@@ -5,7 +5,7 @@ A tool that helps creators understand when platform reach throttling destroys th
 
 A tool that helps creators understand when platform reach throttling destroys their economics and forces them into paid promotion models.
 
-🔗 **[Live Demo](https://TalelGabok.github.io/enshittification-calculator)** 
+🔗 **[Live Demo](https://TalelGabok.github.io/enshittification-calculator/index.html)** 
 
 ## What is this?
 
